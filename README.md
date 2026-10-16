@@ -16,8 +16,7 @@ Engineering highlights:
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
 ![Supabase Postgres](https://img.shields.io/badge/Supabase-Postgres-3ecf8e?logo=supabase&logoColor=white)
 ![Tests: Vitest + pgTAP](https://img.shields.io/badge/tests-Vitest%20%2B%20pgTAP-6e9f18)
-<!-- After pushing to GitHub, add the CI badge:
-![CI](https://github.com/<owner>/<repo>/actions/workflows/ci.yml/badge.svg) -->
+[![CI](https://github.com/icampbell47/rushhq/actions/workflows/ci.yml/badge.svg)](https://github.com/icampbell47/rushhq/actions/workflows/ci.yml)
 
 | Check-in kiosk | Rating form |
 | --- | --- |
