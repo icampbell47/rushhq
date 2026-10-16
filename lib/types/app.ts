@@ -1,3 +1,4 @@
+import type { BrotherStats, RatingSummary } from "@/lib/aggregations";
 import type { Brother, Pnm, PnmCheckIn, Rating } from "@/lib/types/database";
 
 export type RatingWithBrother = Rating & {
@@ -9,20 +10,19 @@ export type PnmWithRatings = Pnm & {
   ratings: RatingWithBrother[];
 };
 
-export type PnmTableRow = Pnm & {
-  pnm_checkins: PnmCheckIn[];
-  rating_count: number;
-  avg_humor: number | null;
-  avg_sociability: number | null;
-  avg_genuineness: number | null;
-  avg_passion: number | null;
-  bid_yes_percentage: number | null;
-};
+export type PnmTableRow = Pnm &
+  RatingSummary & {
+    pnm_checkins: Array<Pick<PnmCheckIn, "pnm_id" | "rush_date">>;
+  };
 
-export type BrotherTableRow = Brother & {
-  rating_count: number;
-  bid_percentage: number | null;
-};
+export type BrotherTableRow = Brother & BrotherStats;
+
+// The rating page is open to every brother, so it only receives what the
+// pickers and the duplicate-rating warning need: no PNM contact details and
+// no other brothers' scores or comments.
+export type RatePnmOption = Pick<Pnm, "id" | "first_name" | "last_name" | "hometown">;
+export type RateBrotherOption = Pick<Brother, "rollbook_number" | "first_name" | "last_name">;
+export type RatingAuthorship = Pick<Rating, "pnm_id" | "brother_rollbook_number" | "submitted_by_rollbook">;
 
 export type ActionResult<T = undefined> =
   | { ok: true; data: T; message?: string }

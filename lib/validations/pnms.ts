@@ -22,8 +22,10 @@ export const pnmUpdateSchema = checkInSchema.extend({
   email: optionalEmail
 });
 
+export const pnmIdSchema = z.string().uuid();
+
 export const pnmStatusSchema = z.object({
-  id: z.string().uuid(),
+  id: pnmIdSchema,
   status: z.enum(PNM_STATUSES)
 });
 

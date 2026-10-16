@@ -12,7 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { isYearOfSchool, YEAR_OPTIONS } from "@/lib/constants";
 import type { PnmWithRatings } from "@/lib/types/app";
-import { averageScore, formatDate, fullName } from "@/lib/utils";
+import { averageScore } from "@/lib/aggregations";
+import { formatDate, fullName } from "@/lib/utils";
 import type { PnmUpdateValues } from "@/lib/validations/pnms";
 
 const scoreColors = ["#005f9e", "#f4c430", "#2f8f83", "#c2410c"];

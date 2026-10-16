@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { YEAR_OPTIONS } from "@/lib/constants";
-import { cn } from "@/lib/utils";
+import { cn, getErrorMessage } from "@/lib/utils";
 import { checkInSchema, type CheckInValues } from "@/lib/validations/pnms";
 
 const defaultValues: Partial<CheckInValues> = {
@@ -40,7 +40,7 @@ export function CheckInForm() {
       form.reset(defaultValues);
       setYearSelectKey((key) => key + 1);
     } catch (error) {
-      toast.error("Check-in was not saved", { description: error instanceof Error ? error.message : "An unexpected error occurred" });
+      toast.error("Check-in was not saved", { description: getErrorMessage(error) });
     }
   }
 

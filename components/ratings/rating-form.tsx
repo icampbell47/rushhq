@@ -13,8 +13,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { Brother, Pnm, Rating } from "@/lib/types/database";
-import { fullName } from "@/lib/utils";
+import type { RateBrotherOption, RatePnmOption, RatingAuthorship } from "@/lib/types/app";
+import { fullName, getErrorMessage } from "@/lib/utils";
 import { ratingSchema, type RatingValues } from "@/lib/validations/ratings";
 
 const LAST_BROTHER_COOKIE = "rushhq_last_brother";
@@ -26,10 +26,18 @@ const scoreFields = [
   ["passion_score", "Passion"]
 ] as const;
 
-export function RatingForm({ pnms, brothers, ratings }: { pnms: Pnm[]; brothers: Brother[]; ratings: Rating[] }) {
+export function RatingForm({
+  pnms,
+  brothers,
+  ratings
+}: {
+  pnms: RatePnmOption[];
+  brothers: RateBrotherOption[];
+  ratings: RatingAuthorship[];
+}) {
   const [pnmQuery, setPnmQuery] = useState("");
   const [brotherQuery, setBrotherQuery] = useState("");
-  const [submittedRatings, setSubmittedRatings] = useState(ratings);
+  const [submittedRatings, setSubmittedRatings] = useState<RatingAuthorship[]>(ratings);
   const form = useForm<RatingValues>({
     resolver: zodResolver(ratingSchema),
     defaultValues: {
@@ -93,7 +101,7 @@ export function RatingForm({ pnms, brothers, ratings }: { pnms: Pnm[]; brothers:
       });
       setPnmQuery("");
     } catch (error) {
-      toast.error("Rating was not submitted", { description: error instanceof Error ? error.message : "An unexpected error occurred" });
+      toast.error("Rating was not submitted", { description: getErrorMessage(error) });
     }
   }
 

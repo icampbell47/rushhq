@@ -5,19 +5,20 @@ import Link from "next/link";
 import { ArrowUpDown, CalendarDays, Trash2 } from "lucide-react";
 import { useReactTable, getCoreRowModel, getSortedRowModel, flexRender, createColumnHelper, type SortingState } from "@tanstack/react-table";
 import { toast } from "sonner";
-import { deletePnm, updatePnmStatus } from "@/app/actions/pnms";
+import { deletePnm } from "@/app/actions/pnms";
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PnmStatusSelect, useOptimisticStatusUpdate } from "@/components/pnms/pnm-status-select";
 import { pnmStatusClasses } from "@/components/pnms/status-styles";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PNM_STATUSES } from "@/lib/constants";
 import { getDefaultRushDate, isPnmOnRushDate } from "@/lib/rush-day";
 import type { PnmTableRow } from "@/lib/types/app";
 import type { PnmStatus } from "@/lib/types/database";
-import { averageScore, cn, fullName } from "@/lib/utils";
+import { averageScore } from "@/lib/aggregations";
+import { cn, fullName } from "@/lib/utils";
 
 const helper = createColumnHelper<PnmTableRow>();
 const statusRank = new Map<PnmStatus, number>(PNM_STATUSES.map((status, index) => [status, index]));
@@ -25,7 +26,7 @@ const statusRank = new Map<PnmStatus, number>(PNM_STATUSES.map((status, index) =
 export function PnmDashboard({ rows, initialRushDate }: { rows: PnmTableRow[]; initialRushDate?: string }) {
   const [query, setQuery] = useState("");
   const [localRows, setLocalRows] = useState(rows);
-  const [savingStatusId, setSavingStatusId] = useState<string | null>(null);
+  const { savingId: savingStatusId, saveStatus } = useOptimisticStatusUpdate();
   const [sorting, setSorting] = useState<SortingState>([{ id: "status", desc: false }]);
   const [selectedRushDate, setSelectedRushDate] = useState<string | null>(initialRushDate ?? null);
   const [draftRushDate, setDraftRushDate] = useState(initialRushDate ?? getDefaultRushDate());
@@ -72,40 +73,19 @@ export function PnmDashboard({ rows, initialRushDate }: { rows: PnmTableRow[]; i
         return a - b;
       },
       cell: (info) => {
-        const currentStatus = info.getValue();
+        const { id, status: previousStatus, first_name, last_name } = info.row.original;
         return (
-          <Select
-            value={currentStatus}
-            onValueChange={async (status) => {
-              const nextStatus = status as PnmStatus;
-              const id = info.row.original.id;
-              const previousStatus = info.row.original.status;
-              setSavingStatusId(id);
-              setLocalRows((current) => current.map((row) => (row.id === id ? { ...row, status: nextStatus } : row)));
-              try {
-                const result = await updatePnmStatus(id, nextStatus);
-                if (result.ok) {
-                  toast.success("Status updated");
-                  return;
-                }
-                setLocalRows((current) => current.map((row) => (row.id === id ? { ...row, status: previousStatus } : row)));
-                toast.error(result.error);
-              } catch (error) {
-                setLocalRows((current) => current.map((row) => (row.id === id ? { ...row, status: previousStatus } : row)));
-                toast.error("Status was not updated", { description: error instanceof Error ? error.message : "An unexpected error occurred" });
-              } finally {
-                setSavingStatusId(null);
-              }
-            }}
-          >
-            <SelectTrigger
-              className={cn("h-8 w-fit min-w-36 max-w-48 rounded-full border px-3 text-xs font-bold shadow-none", pnmStatusClasses[currentStatus])}
-              disabled={savingStatusId === info.row.original.id}
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>{PNM_STATUSES.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}</SelectContent>
-          </Select>
+          <PnmStatusSelect
+            value={info.getValue()}
+            disabled={savingStatusId === id}
+            aria-label={`Status for ${fullName(first_name, last_name)}`}
+            className="h-8 min-w-36 text-xs"
+            onChange={(nextStatus) =>
+              void saveStatus(id, nextStatus, previousStatus, (status) =>
+                setLocalRows((current) => current.map((row) => (row.id === id ? { ...row, status } : row)))
+              )
+            }
+          />
         );
       }
     }),
@@ -128,7 +108,7 @@ export function PnmDashboard({ rows, initialRushDate }: { rows: PnmTableRow[]; i
       enableSorting: false,
       cell: (info) => <DeletePnmButton id={info.row.original.id} name={fullName(info.row.original.first_name, info.row.original.last_name)} onDeleted={() => setLocalRows((current) => current.filter((row) => row.id !== info.row.original.id))} />
     })
-  ], [getPnmHref, savingStatusId]);
+  ], [getPnmHref, saveStatus, savingStatusId]);
 
   const table = useReactTable({
     data: filtered,

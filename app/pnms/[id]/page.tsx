@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/auth";
 import { getNextPnmId, getPnmById } from "@/lib/data";
 import { getLatestPnmRushDate, isRushDate } from "@/lib/rush-day";
+import { pnmIdSchema } from "@/lib/validations/pnms";
 
 export default async function PnmOverviewPage({
   params,
@@ -17,6 +18,9 @@ export default async function PnmOverviewPage({
   searchParams: { rushDate?: string };
 }) {
   await requireAdmin();
+  // A malformed id can never match a row; answer 404 instead of letting
+  // Postgres raise "invalid input syntax for type uuid" into the error page.
+  if (!pnmIdSchema.safeParse(params.id).success) notFound();
   const explicitRushDate = isRushDate(searchParams.rushDate) ? searchParams.rushDate : undefined;
   const pnm = await getPnmById(params.id);
   if (!pnm) notFound();
