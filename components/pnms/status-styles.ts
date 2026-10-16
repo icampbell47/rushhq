@@ -8,5 +8,5 @@ export const pnmStatusClasses: Record<PnmStatus, string> = {
   "Getting Cold": "border-sky-500/30 bg-sky-500 text-white",
   "Pledge": "border-emerald-600/30 bg-emerald-600 text-white",
   "Declined": "border-destructive/30 bg-destructive text-destructive-foreground",
-  "Dumpster Toured": "border-zinc-500/30 bg-zinc-600 text-white"
+  "Released": "border-zinc-500/30 bg-zinc-600 text-white"
 };

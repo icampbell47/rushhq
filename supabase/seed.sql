@@ -68,7 +68,7 @@ SELECT
     WHEN p.impression = 3 THEN 'Neutral'
     WHEN p.impression = 2 AND p.n % 2 = 0 THEN 'Declined'
     WHEN p.impression = 2 THEN 'Getting Cold'
-    ELSE 'Dumpster Toured'
+    ELSE 'Released'
   END)::public.pnm_status,
   ((d.rush_date + time '18:30' + p.n * interval '4 minutes') AT TIME ZONE 'America/New_York'),
   public.normalize_pnm_identity_part(p.first_name),

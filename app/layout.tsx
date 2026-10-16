@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { Toaster } from "sonner";
+import { CHAPTER_NAME } from "@/lib/branding";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Delta Upsilon Rush",
-  description: "Georgia Tech recruitment management platform"
+  title: CHAPTER_NAME === "RushHQ" ? "RushHQ" : `${CHAPTER_NAME} | RushHQ`,
+  description: "Recruitment check-in, ratings, and bid review"
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

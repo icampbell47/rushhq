@@ -239,7 +239,7 @@ export type Database = {
     }
     Enums: {
       pnm_status:
-        | "Dumpster Toured"
+        | "Released"
         | "Getting Cold"
         | "Neutral"
         | "Getting Hot"
@@ -378,7 +378,7 @@ export const Constants = {
   public: {
     Enums: {
       pnm_status: [
-        "Dumpster Toured",
+        "Released",
         "Getting Cold",
         "Neutral",
         "Getting Hot",

@@ -4,7 +4,7 @@ import type * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Cookies from "js-cookie";
 import { Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { type FieldErrors, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { createRating } from "@/app/actions/ratings";
@@ -17,6 +17,8 @@ import type { Brother, Pnm, Rating } from "@/lib/types/database";
 import { fullName } from "@/lib/utils";
 import { ratingSchema, type RatingValues } from "@/lib/validations/ratings";
 
+const LAST_BROTHER_COOKIE = "rushhq_last_brother";
+
 const scoreFields = [
   ["humor_score", "Humor"],
   ["sociability_score", "Sociability"],
@@ -28,12 +30,11 @@ export function RatingForm({ pnms, brothers, ratings }: { pnms: Pnm[]; brothers:
   const [pnmQuery, setPnmQuery] = useState("");
   const [brotherQuery, setBrotherQuery] = useState("");
   const [submittedRatings, setSubmittedRatings] = useState(ratings);
-  const rememberedBrother = parseInt(Cookies.get("du_last_brother") ?? "0") || 0;
   const form = useForm<RatingValues>({
     resolver: zodResolver(ratingSchema),
     defaultValues: {
       pnm_id: "",
-      brother_rollbook_number: rememberedBrother,
+      brother_rollbook_number: 0,
       humor_score: 3,
       sociability_score: 3,
       genuineness_score: 3,
@@ -43,6 +44,13 @@ export function RatingForm({ pnms, brothers, ratings }: { pnms: Pnm[]; brothers:
       interests_activities: ""
     }
   });
+
+  // Restore the brother picked last time on this device. Read after mount so
+  // the server render and the first client render agree.
+  useEffect(() => {
+    const remembered = Number.parseInt(Cookies.get(LAST_BROTHER_COOKIE) ?? "", 10);
+    if (remembered > 0) form.setValue("brother_rollbook_number", remembered);
+  }, [form]);
 
   const selectedPnm = form.watch("pnm_id");
   const selectedBrother = form.watch("brother_rollbook_number");
@@ -69,7 +77,7 @@ export function RatingForm({ pnms, brothers, ratings }: { pnms: Pnm[]; brothers:
         toast.error("Rating was not submitted", { description: result.error });
         return;
       }
-      Cookies.set("du_last_brother", values.brother_rollbook_number.toString(), { expires: 90 });
+      Cookies.set(LAST_BROTHER_COOKIE, values.brother_rollbook_number.toString(), { expires: 90, sameSite: "lax" });
       setSubmittedRatings((current) => [...current, result.data]);
       toast.success("Rating submitted");
       form.reset({

@@ -8,7 +8,7 @@ export const PNM_STATUSES = [
   "Getting Cold",
   "Pledge",
   "Declined",
-  "Dumpster Toured"
+  "Released"
 ] as const satisfies readonly PnmStatus[];
 
 export const YEAR_OPTIONS = ["Freshman", "Sophomore", "Junior", "Senior"] as const;
