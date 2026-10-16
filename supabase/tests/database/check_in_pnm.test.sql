@@ -4,7 +4,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 
-SELECT plan(25);
+SELECT plan(27);
 
 -- Fixture dates far from the seed's rush days.
 \set day1 '''2030-01-10'''
@@ -134,6 +134,18 @@ SELECT ok(
   has_function_privilege('service_role', 'public.check_in_pnm(text, text, text, text, text, text, date, text, text, text)', 'EXECUTE'),
   'service_role can execute check_in_pnm'
 );
+
+SELECT ok(
+  NOT (SELECT prosecdef FROM pg_proc WHERE oid = 'public.check_in_pnm(text, text, text, text, text, text, date, text, text, text)'::regprocedure),
+  'check_in_pnm runs with the caller''s privileges (SECURITY INVOKER)'
+);
+
+SET LOCAL ROLE service_role;
+SELECT lives_ok(
+  $$ SELECT public.check_in_pnm('Service', 'Caller', 'Junior', 'Math', 'service', 'caller', '2030-01-10') $$,
+  'service_role can check in a PNM with its own privileges'
+);
+RESET ROLE;
 
 -- Identity normalization matches lib/pnm-identity.ts ------------------------
 
