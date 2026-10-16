@@ -68,7 +68,7 @@ export function BrotherDashboard({ rows }: { rows: BrotherTableRow[] }) {
         <Summary label="Total ratings" value={totalRatings} />
         <Summary label="Average selectivity" value={avgSelectivity === null ? "N/A" : `${avgSelectivity}%`} />
       </div>
-      <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search brothers" className="max-w-md" />
+      <Input type="search" aria-label="Search brothers" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search brothers" className="max-w-md" />
       <div className="overflow-x-auto rounded-lg border bg-card">
         <table className="w-full min-w-[760px] text-sm">
           <thead className="bg-muted text-left">
@@ -87,9 +87,9 @@ export function BrotherDashboard({ rows }: { rows: BrotherTableRow[] }) {
               const isEditing = editing === row.rollbook_number;
               return (
                 <tr key={row.rollbook_number} className="border-t">
-                  <td className="px-3 py-3">{isEditing ? <Input value={draft.rollbook_number} onChange={(event) => setDraft({ ...draft, rollbook_number: event.target.value })} /> : row.rollbook_number}</td>
-                  <td className="px-3 py-3">{isEditing ? <Input value={draft.first_name} onChange={(event) => setDraft({ ...draft, first_name: event.target.value })} /> : row.first_name}</td>
-                  <td className="px-3 py-3">{isEditing ? <Input value={draft.last_name} onChange={(event) => setDraft({ ...draft, last_name: event.target.value })} /> : row.last_name}</td>
+                  <td className="px-3 py-3">{isEditing ? <Input aria-label="Rollbook number" inputMode="numeric" value={draft.rollbook_number} onChange={(event) => setDraft({ ...draft, rollbook_number: event.target.value })} /> : row.rollbook_number}</td>
+                  <td className="px-3 py-3">{isEditing ? <Input aria-label="First name" value={draft.first_name} onChange={(event) => setDraft({ ...draft, first_name: event.target.value })} /> : row.first_name}</td>
+                  <td className="px-3 py-3">{isEditing ? <Input aria-label="Last name" value={draft.last_name} onChange={(event) => setDraft({ ...draft, last_name: event.target.value })} /> : row.last_name}</td>
                   <td className="px-3 py-3">{row.bid_percentage === null ? "N/A" : `${row.bid_percentage}%`}</td>
                   <td className="px-3 py-3">{row.rating_count}</td>
                   <td className="px-3 py-3">
@@ -109,9 +109,9 @@ export function BrotherDashboard({ rows }: { rows: BrotherTableRow[] }) {
               );
             })}
             <tr className="border-t bg-muted/30">
-              <td className="px-3 py-3"><Input value={newBrother.rollbook_number} onChange={(event) => setNewBrother({ ...newBrother, rollbook_number: event.target.value })} placeholder="Rollbook" /></td>
-              <td className="px-3 py-3"><Input value={newBrother.first_name} onChange={(event) => setNewBrother({ ...newBrother, first_name: event.target.value })} placeholder="First" /></td>
-              <td className="px-3 py-3"><Input value={newBrother.last_name} onChange={(event) => setNewBrother({ ...newBrother, last_name: event.target.value })} placeholder="Last" /></td>
+              <td className="px-3 py-3"><Input aria-label="New brother rollbook number" inputMode="numeric" value={newBrother.rollbook_number} onChange={(event) => setNewBrother({ ...newBrother, rollbook_number: event.target.value })} placeholder="Rollbook" /></td>
+              <td className="px-3 py-3"><Input aria-label="New brother first name" value={newBrother.first_name} onChange={(event) => setNewBrother({ ...newBrother, first_name: event.target.value })} placeholder="First" /></td>
+              <td className="px-3 py-3"><Input aria-label="New brother last name" value={newBrother.last_name} onChange={(event) => setNewBrother({ ...newBrother, last_name: event.target.value })} placeholder="Last" /></td>
               <td className="px-3 py-3">N/A</td>
               <td className="px-3 py-3">0</td>
               <td className="px-3 py-3" colSpan={2}><Button onClick={() => void saveBrother()}><Plus className="h-4 w-4" />Add</Button></td>
@@ -166,7 +166,7 @@ function compareBrotherRows(a: BrotherTableRow, b: BrotherTableRow, key: Brother
 function DeleteBrotherButton({ rollbook, onDeleted }: { rollbook: number; onDeleted: () => void }) {
   return (
     <AlertDialog>
-      <AlertDialogTrigger asChild><Button variant="ghost" size="icon" aria-label={`Delete ${rollbook}`}><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
+      <AlertDialogTrigger asChild><Button variant="ghost" size="icon" aria-label={`Delete brother #${rollbook}`}><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete brother #{rollbook}?</AlertDialogTitle>

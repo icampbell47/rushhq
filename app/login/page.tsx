@@ -29,9 +29,21 @@ export default function LoginPage({
             <input type="hidden" name="next" value={next} />
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" autoComplete="current-password" required />
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                aria-invalid={searchParams.error ? true : undefined}
+                aria-describedby={searchParams.error ? "password-error" : undefined}
+              />
             </div>
-            {searchParams.error ? <p className="text-sm font-medium text-destructive">That password did not match.</p> : null}
+            {searchParams.error ? (
+              <p id="password-error" role="alert" className="text-sm font-medium text-destructive">
+                That password did not match.
+              </p>
+            ) : null}
             <Button type="submit" className="w-full">Continue</Button>
           </form>
         </CardContent>

@@ -7,10 +7,10 @@ import { toast } from "sonner";
 import { createPnm } from "@/app/actions/pnms";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/ui/form-field";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { YEAR_OPTIONS } from "@/lib/constants";
-import { cn, getErrorMessage } from "@/lib/utils";
+import { getErrorMessage } from "@/lib/utils";
 import { checkInSchema, type CheckInValues } from "@/lib/validations/pnms";
 
 const defaultValues: Partial<CheckInValues> = {
@@ -59,49 +59,41 @@ export function CheckInForm() {
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="grid gap-4 sm:grid-cols-2">
-      <Field label="First Name" error={form.formState.errors.first_name?.message}>
-        <Input {...form.register("first_name")} autoComplete="given-name" />
-      </Field>
-      <Field label="Last Name" error={form.formState.errors.last_name?.message}>
-        <Input {...form.register("last_name")} autoComplete="family-name" />
-      </Field>
-      <Field label="Hometown" error={form.formState.errors.hometown?.message}>
-        <Input {...form.register("hometown")} />
-      </Field>
-      <Field label="Year of School" error={form.formState.errors.year_of_school?.message}>
-        <Select
-          key={yearSelectKey}
-          value={form.watch("year_of_school") ?? ""}
-          onValueChange={(value) => form.setValue("year_of_school", value as CheckInValues["year_of_school"], { shouldValidate: true })}
-        >
-          <SelectTrigger><SelectValue placeholder="Select year" /></SelectTrigger>
-          <SelectContent>{YEAR_OPTIONS.map((year) => <SelectItem key={year} value={year}>{year}</SelectItem>)}</SelectContent>
-        </Select>
-      </Field>
-      <Field label="Major" error={form.formState.errors.major?.message}>
-        <Input {...form.register("major")} autoComplete="organization-title" />
-      </Field>
-      <Field label="Instagram (optional)" error={form.formState.errors.instagram_handle?.message}>
-        <Input {...form.register("instagram_handle")} placeholder="@username" autoComplete="off" />
-      </Field>
-      <Field label="Phone Number" error={form.formState.errors.phone_number?.message}>
-        <Input {...form.register("phone_number")} type="tel" autoComplete="tel" maxLength={20} />
-      </Field>
+      <FormField label="First Name" error={form.formState.errors.first_name?.message}>
+        {(control) => <Input {...form.register("first_name")} autoComplete="given-name" {...control} />}
+      </FormField>
+      <FormField label="Last Name" error={form.formState.errors.last_name?.message}>
+        {(control) => <Input {...form.register("last_name")} autoComplete="family-name" {...control} />}
+      </FormField>
+      <FormField label="Hometown" error={form.formState.errors.hometown?.message}>
+        {(control) => <Input {...form.register("hometown")} {...control} />}
+      </FormField>
+      <FormField label="Year of School" error={form.formState.errors.year_of_school?.message}>
+        {(control) => (
+          <Select
+            key={yearSelectKey}
+            value={form.watch("year_of_school") ?? ""}
+            onValueChange={(value) => form.setValue("year_of_school", value as CheckInValues["year_of_school"], { shouldValidate: true })}
+          >
+            <SelectTrigger {...control}><SelectValue placeholder="Select year" /></SelectTrigger>
+            <SelectContent>{YEAR_OPTIONS.map((year) => <SelectItem key={year} value={year}>{year}</SelectItem>)}</SelectContent>
+          </Select>
+        )}
+      </FormField>
+      <FormField label="Major" error={form.formState.errors.major?.message}>
+        {(control) => <Input {...form.register("major")} autoComplete="organization-title" {...control} />}
+      </FormField>
+      <FormField label="Instagram (optional)" error={form.formState.errors.instagram_handle?.message}>
+        {(control) => <Input {...form.register("instagram_handle")} placeholder="@username" autoComplete="off" {...control} />}
+      </FormField>
+      <FormField label="Phone Number" error={form.formState.errors.phone_number?.message}>
+        {(control) => <Input {...form.register("phone_number")} type="tel" autoComplete="tel" maxLength={20} {...control} />}
+      </FormField>
       <div className="sm:col-span-2">
         <Button type="submit" size="lg" className="w-full" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting ? "Saving..." : "Check In"}
         </Button>
       </div>
     </form>
-  );
-}
-
-function Field({ label, error, children, className }: { label: string; error?: string; children: React.ReactNode; className?: string }) {
-  return (
-    <div className={cn("space-y-2", className)}>
-      <Label>{label}</Label>
-      {children}
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
-    </div>
   );
 }

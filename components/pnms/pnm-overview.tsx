@@ -8,7 +8,7 @@ import { updatePnm } from "@/app/actions/pnms";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/ui/form-field";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { isYearOfSchool, YEAR_OPTIONS } from "@/lib/constants";
 import type { PnmWithRatings } from "@/lib/types/app";
@@ -75,20 +75,21 @@ export function PnmOverview({ pnm }: { pnm: PnmWithRatings }) {
           <Editable label="Last Name" value={draft.last_name ?? ""} editing={editing} onChange={(value) => setDraft({ ...draft, last_name: value })} />
           <Editable label="Hometown" value={draft.hometown ?? ""} editing={editing} onChange={(value) => setDraft({ ...draft, hometown: value })} />
           <Editable label="Major" value={draft.major ?? ""} editing={editing} onChange={(value) => setDraft({ ...draft, major: value })} />
-          <div className="space-y-2">
-            <Label>Year</Label>
-            {editing ? (
-              <Select value={draft.year_of_school ?? "Freshman"} onValueChange={(value) => setDraft({ ...draft, year_of_school: value as PnmUpdateValues["year_of_school"] })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{YEAR_OPTIONS.map((year) => <SelectItem key={year} value={year}>{year}</SelectItem>)}</SelectContent>
-              </Select>
-            ) : <p>{pnm.year_of_school ?? "N/A"}</p>}
-          </div>
+          {editing ? (
+            <FormField label="Year">
+              {(control) => (
+                <Select value={draft.year_of_school ?? "Freshman"} onValueChange={(value) => setDraft({ ...draft, year_of_school: value as PnmUpdateValues["year_of_school"] })}>
+                  <SelectTrigger {...control}><SelectValue /></SelectTrigger>
+                  <SelectContent>{YEAR_OPTIONS.map((year) => <SelectItem key={year} value={year}>{year}</SelectItem>)}</SelectContent>
+                </Select>
+              )}
+            </FormField>
+          ) : <ReadOnlyField label="Year" value={pnm.year_of_school ?? "N/A"} />}
           <Editable label="Instagram" value={draft.instagram_handle ?? ""} editing={editing} onChange={(value) => setDraft({ ...draft, instagram_handle: value })} />
           <Editable label="Email (Legacy)" value={draft.email ?? ""} editing={editing} onChange={(value) => setDraft({ ...draft, email: value })} />
           <Editable label="Phone" value={draft.phone_number ?? ""} editing={editing} onChange={(value) => setDraft({ ...draft, phone_number: value })} />
           <div className="space-y-2">
-            <Label>Interests / Activities</Label>
+            <p className="text-sm font-bold leading-none">Interests / Activities</p>
             <div className="space-y-2">
               {pnm.ratings.filter((rating) => rating.interests_activities).map((rating) => (
                 <p key={rating.id} className="rounded-md bg-muted p-3 text-sm">{rating.interests_activities}</p>
@@ -138,7 +139,21 @@ export function PnmOverview({ pnm }: { pnm: PnmWithRatings }) {
 }
 
 function Editable({ label, value, editing, onChange }: { label: string; value: string; editing: boolean; onChange: (value: string) => void }) {
-  return <div className="space-y-2"><Label>{label}</Label>{editing ? <Input value={value} onChange={(event) => onChange(event.target.value)} /> : <p>{value || "N/A"}</p>}</div>;
+  if (!editing) return <ReadOnlyField label={label} value={value || "N/A"} />;
+  return (
+    <FormField label={label}>
+      {(control) => <Input value={value} onChange={(event) => onChange(event.target.value)} {...control} />}
+    </FormField>
+  );
+}
+
+function ReadOnlyField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="space-y-2">
+      <p className="text-sm font-bold leading-none">{label}</p>
+      <p>{value}</p>
+    </div>
+  );
 }
 
 function VoteColumn({ title, ratings }: { title: string; ratings: PnmWithRatings["ratings"] }) {

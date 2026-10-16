@@ -140,12 +140,12 @@ export function PnmDashboard({ rows, initialRushDate }: { rows: PnmTableRow[]; i
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <Input type="date" value={draftRushDate} onChange={(event) => setDraftRushDate(event.target.value)} className="w-full sm:w-44" />
+          <Input type="date" aria-label="Rush date to review" value={draftRushDate} onChange={(event) => setDraftRushDate(event.target.value)} className="w-full sm:w-44" />
           <Button type="button" onClick={() => setRushDateFilter(draftRushDate)}>Review Date</Button>
           <Button type="button" variant="outline" onClick={() => setRushDateFilter(null)}>All PNMs</Button>
         </div>
       </div>
-      <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search PNMs" className="max-w-md" />
+      <Input type="search" aria-label="Search PNMs" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search PNMs" className="max-w-md" />
       <div className="hidden overflow-x-auto rounded-lg border bg-card md:block">
         <table className="w-full text-sm">
           <thead className="bg-muted text-left">

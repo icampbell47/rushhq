@@ -4,12 +4,13 @@ import type * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Cookies from "js-cookie";
 import { Search } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { type FieldErrors, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { createRating } from "@/app/actions/ratings";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -157,13 +158,15 @@ export function RatingForm({
           {scoreFields.map(([name, label]) => (
             <div key={name} className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>{label}</Label>
+                <p id={`${name}-label`} className="text-sm font-bold leading-none">{label}</p>
               </div>
-              <div className="grid grid-cols-5 gap-2">
+              <div role="group" aria-labelledby={`${name}-label`} className="grid grid-cols-5 gap-2">
                 {[1, 2, 3, 4, 5].map((score) => (
                   <Button
                     key={score}
                     type="button"
+                    aria-pressed={form.watch(name) === score}
+                    aria-label={`${label} ${score} of 5`}
                     variant={form.watch(name) === score ? "default" : "outline"}
                     className={form.watch(name) === score ? "bg-[#0b6fae] text-white hover:bg-[#095e95]" : "border-[#0b6fae]/35 text-[#0b6fae] hover:bg-[#0b6fae]/10 dark:border-sky-300/40 dark:text-sky-200 dark:hover:bg-sky-300/10"}
                     onClick={() => form.setValue(name, score, { shouldValidate: true })}
@@ -174,18 +177,19 @@ export function RatingForm({
               </div>
             </div>
           ))}
-          <div className="grid grid-cols-3 gap-3">
-            <Button type="button" size="lg" variant={form.watch("bid_vote") ? "vote_yes" : "outline"} onClick={() => form.setValue("bid_vote", true)}>Bid</Button>
+          <div role="group" aria-label="Bid vote" className="grid grid-cols-3 gap-3">
+            <Button type="button" size="lg" aria-pressed={form.watch("bid_vote") === true} variant={form.watch("bid_vote") ? "vote_yes" : "outline"} onClick={() => form.setValue("bid_vote", true)}>Bid</Button>
             <Button
               type="button"
               size="lg"
+              aria-pressed={form.watch("bid_vote") === null}
               variant={form.watch("bid_vote") === null ? "secondary" : "outline"}
               className={form.watch("bid_vote") === null ? "bg-[#d7b65d] text-[#172033] hover:bg-[#c9a64c]" : ""}
               onClick={() => form.setValue("bid_vote", null)}
             >
               Not Sure
             </Button>
-            <Button type="button" size="lg" variant={form.watch("bid_vote") === false ? "vote_no" : "outline"} onClick={() => form.setValue("bid_vote", false)}>No Bid</Button>
+            <Button type="button" size="lg" aria-pressed={form.watch("bid_vote") === false} variant={form.watch("bid_vote") === false ? "vote_no" : "outline"} onClick={() => form.setValue("bid_vote", false)}>No Bid</Button>
           </div>
           <TextAreaField label="Comments" registration={form.register("comments")} />
           <TextAreaField label="Interests / Activities" registration={form.register("interests_activities")} />
@@ -217,17 +221,19 @@ function SearchPicker({
   onSelect: (id: string) => void;
   showResults?: boolean;
 }) {
+  const inputId = useId();
   return (
     <div className="space-y-2">
-      <Label>{label}</Label>
+      <Label htmlFor={inputId}>{label}</Label>
       <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-        <Input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder={placeholder} className="pl-9" />
+        <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+        <Input id={inputId} type="search" value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder={placeholder} className="pl-9" />
       </div>
       {showResults ? (
-        <div className="max-h-44 overflow-auto rounded-md border">
+        <div role="group" aria-label={`${label} results`} className="max-h-44 overflow-auto rounded-md border">
+          {items.length === 0 ? <p className="px-3 py-2 text-sm text-muted-foreground">No matches</p> : null}
           {items.map((item) => (
-            <button key={item.id} type="button" onClick={() => onSelect(item.id)} className={`flex w-full flex-col px-3 py-1.5 text-left text-sm hover:bg-muted ${selected === item.id ? "bg-primary/10" : ""}`}>
+            <button key={item.id} type="button" aria-pressed={selected === item.id} onClick={() => onSelect(item.id)} className={`flex w-full flex-col px-3 py-1.5 text-left text-sm hover:bg-muted ${selected === item.id ? "bg-primary/10" : ""}`}>
               <span className="font-semibold leading-tight">{item.title}</span>
               <span className="text-xs leading-tight text-muted-foreground">{item.subtitle}</span>
             </button>
@@ -240,10 +246,8 @@ function SearchPicker({
 
 function TextAreaField({ label, registration, error }: { label: string; registration: ReturnType<ReturnType<typeof useForm<RatingValues>>["register"]>; error?: string }) {
   return (
-    <div className="space-y-2">
-      <Label>{label}</Label>
-      <Textarea {...registration} />
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
-    </div>
+    <FormField label={label} error={error}>
+      {(control) => <Textarea {...registration} {...control} />}
+    </FormField>
   );
 }
