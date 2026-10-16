@@ -55,6 +55,13 @@ describe("pnmUpdateSchema", () => {
     expect(pnmUpdateSchema.parse({ ...validCheckIn, email: "" }).email).toBeNull();
   });
 
+  it("accepts null optional fields from an existing database row", () => {
+    // Regression: the bio editor is seeded from the row, where unset columns
+    // are null. These used to fail with "Expected string, received null".
+    const parsed = pnmUpdateSchema.parse({ ...validCheckIn, hometown: null, phone_number: null, email: null, instagram_handle: null });
+    expect(parsed).toMatchObject({ hometown: null, phone_number: null, email: null, instagram_handle: "" });
+  });
+
   it("rejects a malformed email", () => {
     expect(errorPaths(pnmUpdateSchema.safeParse({ ...validCheckIn, email: "not-an-email" }))).toEqual(["email"]);
   });

@@ -35,7 +35,10 @@ function getRushDateForDate(date: Date) {
 }
 
 export function isRushDate(value: string | null | undefined): value is string {
-  return Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value));
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  // Round-trip through Date.UTC to reject impossible dates like 2026-02-30.
+  const [year, month, day] = value.split("-").map(Number);
+  return formatDateValue(new Date(Date.UTC(year, month - 1, day))) === value;
 }
 
 export function getDefaultRushDate(now = new Date()) {

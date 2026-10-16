@@ -76,7 +76,12 @@ describe("isRushDate", () => {
     expect(isRushDate("2026-09-01")).toBe(true);
   });
 
-  it.each([null, undefined, "", "2026-9-1", "09/01/2026", "2026-09-01T00:00:00Z", "yesterday"])(
+  it("accepts leap days only in leap years", () => {
+    expect(isRushDate("2028-02-29")).toBe(true);
+    expect(isRushDate("2026-02-29")).toBe(false);
+  });
+
+  it.each([null, undefined, "", "2026-9-1", "09/01/2026", "2026-09-01T00:00:00Z", "yesterday", "2026-13-01", "2026-02-30", "2026-00-10"])(
     "rejects %s",
     (value) => {
       expect(isRushDate(value)).toBe(false);

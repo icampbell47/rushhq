@@ -1,10 +1,12 @@
 import { z } from "zod";
 import { PNM_STATUSES, YEAR_OPTIONS } from "@/lib/constants";
 
-const optionalText = z.string().trim().optional().transform((value) => value || null);
+// Optional fields accept null as well as undefined: the edit form is seeded
+// from database rows, where an unset column is null rather than missing.
+const optionalText = z.string().trim().nullish().transform((value) => value || null);
 const optionalTextWithBlankDefault = z.string().trim().nullish().transform((value) => value ?? "");
-const optionalPhone = z.string().trim().max(20, "Phone number must be 20 characters or fewer").optional().transform((value) => value || null);
-const optionalEmail = z.string().trim().email("Enter a valid email").optional().or(z.literal("")).transform((value) => value || null);
+const optionalPhone = z.string().trim().max(20, "Phone number must be 20 characters or fewer").nullish().transform((value) => value || null);
+const optionalEmail = z.string().trim().email("Enter a valid email").or(z.literal("")).nullish().transform((value) => value || null);
 
 export const checkInSchema = z.object({
   first_name: z.string().trim().min(1, "First name is required"),
