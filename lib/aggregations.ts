@@ -71,9 +71,6 @@ export function groupByPnmId<T extends { pnm_id: string }>(rows: T[]) {
   return byPnmId;
 }
 
-export function groupCheckInsByPnmId<T extends Pick<PnmCheckIn, "pnm_id">>(checkIns: T[]) {
-  return groupByPnmId(checkIns);
-}
 
 /**
  * The PNM after `currentId` in first-name, last-name order (case- and

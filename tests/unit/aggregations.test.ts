@@ -3,7 +3,7 @@ import {
   averageScore,
   getBrotherStats,
   getNextPnmIdAlphabetical,
-  groupCheckInsByPnmId,
+  groupByPnmId,
   percentage,
   summarizeRatings,
   type ScoreFields
@@ -92,9 +92,9 @@ describe("getBrotherStats", () => {
   });
 });
 
-describe("groupCheckInsByPnmId", () => {
+describe("groupByPnmId", () => {
   it("groups check-ins and preserves their order", () => {
-    const groups = groupCheckInsByPnmId([
+    const groups = groupByPnmId([
       { pnm_id: "a", rush_date: "2026-09-01" },
       { pnm_id: "b", rush_date: "2026-09-01" },
       { pnm_id: "a", rush_date: "2026-09-02" }
