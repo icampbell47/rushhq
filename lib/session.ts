@@ -10,7 +10,7 @@ export type SessionTier = "brother" | "admin";
 /**
  * Brothers stay signed in for the whole rush season on their own phones.
  * Admin sessions are short because an admin cookie can rewrite statuses and
- * delete records, and admins often sign in on shared devices.
+ * delete records, so a lost or shared device should not stay privileged long.
  */
 export const SESSION_TTL_SECONDS: Record<SessionTier, number> = {
   brother: 60 * 60 * 24 * 30,
