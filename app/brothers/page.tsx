@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/auth";
 import { getBrotherRows } from "@/lib/data";
 
 export default async function BrotherDashboardPage() {
-  requireAdmin();
+  await requireAdmin();
   const rows = await getBrotherRows();
   return (
     <AppShell title="Brother Dashboard">

@@ -16,7 +16,7 @@ export default async function PnmOverviewPage({
   params: { id: string };
   searchParams: { rushDate?: string };
 }) {
-  requireAdmin();
+  await requireAdmin();
   const explicitRushDate = isRushDate(searchParams.rushDate) ? searchParams.rushDate : undefined;
   const pnm = await getPnmById(params.id);
   if (!pnm) notFound();

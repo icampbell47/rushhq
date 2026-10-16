@@ -1,25 +1,29 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { AUTH_COOKIE_NAME } from "@/lib/constants";
+import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/session";
 
-export function middleware(request: NextRequest) {
-  const tier = request.cookies.get(AUTH_COOKIE_NAME)?.value;
+// Middleware is the first gate; every page and server action still calls
+// requireAdmin()/requireBrother() itself, because server actions can be
+// invoked directly by POSTing to any page.
+export async function middleware(request: NextRequest) {
+  const tier = await verifySessionToken(request.cookies.get(SESSION_COOKIE_NAME)?.value);
   const path = request.nextUrl.pathname;
 
   if ((path.startsWith("/pnms") || path.startsWith("/brothers")) && tier !== "admin") {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.search = `?tier=admin&next=${encodeURIComponent(path)}`;
-    return NextResponse.redirect(url);
+    return redirectToLogin(request, "admin", path);
   }
 
   if (path.startsWith("/rate") && tier !== "brother" && tier !== "admin") {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.search = `?tier=brother&next=${encodeURIComponent(path)}`;
-    return NextResponse.redirect(url);
+    return redirectToLogin(request, "brother", path);
   }
 
   return NextResponse.next();
+}
+
+function redirectToLogin(request: NextRequest, tier: "admin" | "brother", path: string) {
+  const url = request.nextUrl.clone();
+  url.pathname = "/login";
+  url.search = `?tier=${tier}&next=${encodeURIComponent(path + request.nextUrl.search)}`;
+  return NextResponse.redirect(url);
 }
 
 export const config = {

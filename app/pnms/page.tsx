@@ -5,7 +5,7 @@ import { getPnmRows } from "@/lib/data";
 import { isRushDate } from "@/lib/rush-day";
 
 export default async function PnmDashboardPage({ searchParams }: { searchParams: { rushDate?: string } }) {
-  requireAdmin();
+  await requireAdmin();
   const rows = await getPnmRows();
   const rushDate = isRushDate(searchParams.rushDate) ? searchParams.rushDate : undefined;
   return (

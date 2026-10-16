@@ -45,7 +45,7 @@ export async function createPnm(input: unknown): Promise<ActionResult<Pnm>> {
 }
 
 export async function updatePnmStatus(id: string, status: PnmStatus): Promise<ActionResult<Pnm>> {
-  requireAdmin();
+  await requireAdmin();
   try {
     const parsed = pnmStatusSchema.safeParse({ id, status });
     if (!parsed.success) return { ok: false, error: "Invalid status update" };
@@ -67,7 +67,7 @@ export async function updatePnmStatus(id: string, status: PnmStatus): Promise<Ac
 }
 
 export async function updatePnm(id: string, input: unknown): Promise<ActionResult<Pnm>> {
-  requireAdmin();
+  await requireAdmin();
   try {
     const parsed = pnmUpdateSchema.safeParse(input);
     if (!parsed.success) return { ok: false, error: parsed.error.errors[0]?.message ?? "Invalid PNM" };
@@ -92,7 +92,7 @@ export async function updatePnm(id: string, input: unknown): Promise<ActionResul
 }
 
 export async function deletePnm(id: string): Promise<ActionResult<string>> {
-  requireAdmin();
+  await requireAdmin();
   try {
     const supabase = createAdminSupabaseClient();
     const { error } = await supabase

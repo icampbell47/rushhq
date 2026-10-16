@@ -4,7 +4,7 @@ import { requireBrother } from "@/lib/auth";
 import { getRateData } from "@/lib/data";
 
 export default async function RatePage() {
-  requireBrother();
+  await requireBrother();
   const data = await getRateData();
   return (
     <AppShell title="PNM Rating Form" showNav={false}>

@@ -1,25 +1,48 @@
+import "server-only";
+
+import { createHash, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { AUTH_COOKIE_NAME, type AuthTier } from "@/lib/constants";
+import type { AuthTier } from "@/lib/constants";
+import { SESSION_COOKIE_NAME, type SessionTier, verifySessionToken } from "@/lib/session";
 
-export function getAuthTier(): AuthTier {
-  const value = cookies().get(AUTH_COOKIE_NAME)?.value;
-  if (value === "admin" || value === "brother") return value;
-  return "public";
+/**
+ * Every helper here is async. Always `await` it: an un-awaited
+ * requireAdmin() returns a pending promise and the caller carries on as if
+ * the check passed. ESLint's no-floating-promises rule enforces this.
+ */
+export async function getAuthTier(): Promise<AuthTier> {
+  const tier = await verifySessionToken(cookies().get(SESSION_COOKIE_NAME)?.value);
+  return tier ?? "public";
 }
 
-export function requireBrother() {
-  const tier = getAuthTier();
-  if (tier !== "brother" && tier !== "admin") redirect("/login?next=/rate&tier=brother");
+export async function requireBrother() {
+  const tier = await getAuthTier();
+  if (tier !== "brother" && tier !== "admin") redirect("/login?tier=brother&next=/rate");
 }
 
-export function requireAdmin() {
-  const tier = getAuthTier();
+export async function requireAdmin() {
+  const tier = await getAuthTier();
   if (tier !== "admin") redirect("/login?tier=admin");
 }
 
-export function isValidTierPassword(tier: AuthTier, password: string) {
-  if (tier === "brother") return password === process.env.BROTHER_PASSWORD;
-  if (tier === "admin") return password === process.env.ADMIN_PASSWORD;
-  return true;
+const TIER_PASSWORD_ENV: Record<SessionTier, "BROTHER_PASSWORD" | "ADMIN_PASSWORD"> = {
+  brother: "BROTHER_PASSWORD",
+  admin: "ADMIN_PASSWORD"
+};
+
+export function isValidTierPassword(tier: SessionTier, password: string) {
+  return passwordMatches(password, process.env[TIER_PASSWORD_ENV[tier]]);
+}
+
+/**
+ * Constant-time comparison. Hashing both sides first gives equal-length
+ * buffers, so neither the content nor the length of the expected password
+ * leaks through timing. An unset or empty expected password never matches.
+ */
+export function passwordMatches(candidate: string, expected: string | undefined) {
+  if (!expected) return false;
+  const candidateDigest = createHash("sha256").update(candidate, "utf8").digest();
+  const expectedDigest = createHash("sha256").update(expected, "utf8").digest();
+  return timingSafeEqual(candidateDigest, expectedDigest);
 }

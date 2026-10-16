@@ -10,7 +10,7 @@ import type { Brother } from "@/lib/types/database";
 const MUTATION_TIMEOUT_MS = 15000;
 
 export async function upsertBrother(input: unknown, previousRollbook?: number): Promise<ActionResult<Brother>> {
-  requireAdmin();
+  await requireAdmin();
   try {
     const parsed = brotherSchema.safeParse(input);
     if (!parsed.success) return { ok: false, error: parsed.error.errors[0]?.message ?? "Invalid brother" };
@@ -62,7 +62,7 @@ export async function upsertBrother(input: unknown, previousRollbook?: number): 
 }
 
 export async function deleteBrother(rollbookNumber: number): Promise<ActionResult<number>> {
-  requireAdmin();
+  await requireAdmin();
   try {
     const supabase = createAdminSupabaseClient();
     const { error } = await supabase

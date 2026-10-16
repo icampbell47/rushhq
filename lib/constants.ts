@@ -13,6 +13,4 @@ export const PNM_STATUSES = [
 
 export const YEAR_OPTIONS = ["Freshman", "Sophomore", "Junior", "Senior"] as const;
 
-export const AUTH_COOKIE_NAME = "du_auth_tier";
-
 export type AuthTier = "public" | "brother" | "admin";

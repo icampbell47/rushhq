@@ -9,7 +9,7 @@ import type { Rating } from "@/lib/types/database";
 const MUTATION_TIMEOUT_MS = 15000;
 
 export async function createRating(input: unknown): Promise<ActionResult<Rating>> {
-  requireBrother();
+  await requireBrother();
   try {
     const parsed = ratingSchema.safeParse(input);
     if (!parsed.success) {
