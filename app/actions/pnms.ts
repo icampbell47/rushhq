@@ -10,10 +10,18 @@ import type { ActionResult } from "@/lib/types/app";
 import type { Pnm, PnmStatus } from "@/lib/types/database";
 import { checkInSchema, pnmIdSchema, pnmStatusSchema, pnmUpdateSchema } from "@/lib/validations/pnms";
 
+const CHECK_IN_FAILED = "Check-in could not be saved. Please try again or ask a brother for help.";
+
 // Public: this is the check-in kiosk, so it deliberately has no auth guard.
 // All writes go through the check_in_pnm function, which only the service
 // role may execute.
-export async function createPnm(input: unknown): Promise<ActionResult<Pnm>> {
+//
+// Because anyone can call it, it returns nothing about the stored record.
+// check_in_pnm returns the matched PNM's full row, and a repeat check-in
+// matches an existing person by name and year, so passing that row back
+// would let an anonymous caller look up any PNM's phone, email, and status.
+// Database errors are logged server-side and replaced with a generic message.
+export async function createPnm(input: unknown): Promise<ActionResult<null>> {
   try {
     const parsed = checkInSchema.safeParse(input);
     if (!parsed.success) return toValidationError(parsed.error, "Invalid check-in");
@@ -39,11 +47,15 @@ export async function createPnm(input: unknown): Promise<ActionResult<Pnm>> {
         p_phone_number: parsed.data.phone_number ?? undefined
       })
       .abortSignal(mutationSignal());
-    if (error) return { ok: false, error: error.message };
+    if (error) {
+      console.error("check_in_pnm failed", { code: error.code, message: error.message });
+      return { ok: false, error: CHECK_IN_FAILED };
+    }
 
-    return { ok: true, data, message: "Check-in recorded" };
+    return { ok: true, data: null, message: "Check-in recorded" };
   } catch (error) {
-    return toActionError(error, "Unable to save check-in");
+    console.error("createPnm failed", error);
+    return { ok: false, error: CHECK_IN_FAILED };
   }
 }
 
