@@ -2,66 +2,89 @@ import { PostgrestError } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
 import { selectAll } from "@/lib/supabase/select-all";
 
-/** Fake PostgREST: serves `rows` in ranges, capped at `maxRows` per response. */
-function fakeTable(rows: number[], { maxRows = 1000, withCount = true } = {}) {
-  const requests: Array<[number, number]> = [];
-  const fetchPage = async (from: number, to: number) => {
-    requests.push([from, to]);
-    const end = Math.min(to + 1, from + maxRows);
-    return { data: rows.slice(from, end), error: null, count: withCount ? rows.length : null };
+type Row = { id: number };
+
+/**
+ * Fake PostgREST table ordered by a unique id. Serves `ORDER BY id`,
+ * `id > after`, and `LIMIT`, capped at `maxRows` per response. `rows` is a
+ * live array so tests can insert or delete between pages.
+ */
+function fakeTable(rows: Row[], { maxRows = 1000 } = {}) {
+  const requests: Array<{ after: number | undefined; limit: number }> = [];
+  const fetchPage = async (after: number | undefined, limit: number) => {
+    requests.push({ after, limit });
+    const page = [...rows]
+      .sort((a, b) => a.id - b.id)
+      .filter((row) => after === undefined || row.id > after)
+      .slice(0, Math.min(limit, maxRows));
+    return { data: page, error: null };
   };
   return { fetchPage, requests };
 }
 
-const range = (n: number) => Array.from({ length: n }, (_, i) => i);
+const rowsUpTo = (n: number) => Array.from({ length: n }, (_, i) => ({ id: i + 1 }));
+const ids = (rows: Row[]) => rows.map((row) => row.id);
+const keyOf = (row: Row) => row.id;
 
-describe("selectAll", () => {
+describe("selectAll (keyset pagination)", () => {
   it("returns a small table in one request", async () => {
-    const table = fakeTable(range(42));
-    await expect(selectAll(table.fetchPage)).resolves.toEqual(range(42));
-    expect(table.requests).toEqual([[0, 999]]);
+    const table = fakeTable(rowsUpTo(42));
+    await expect(selectAll(table.fetchPage, keyOf)).resolves.toEqual(rowsUpTo(42));
+    expect(table.requests).toEqual([{ after: undefined, limit: 1000 }]);
   });
 
-  it("keeps paging past the 1000-row cap until the exact count is reached", async () => {
-    const table = fakeTable(range(2500));
-    await expect(selectAll(table.fetchPage)).resolves.toEqual(range(2500));
-    expect(table.requests).toEqual([[0, 999], [1000, 1999], [2000, 2999]]);
+  it("pages past the 1000-row cap using the last key of each page", async () => {
+    const table = fakeTable(rowsUpTo(2500));
+    const rows = await selectAll(table.fetchPage, keyOf);
+    expect(ids(rows)).toEqual(ids(rowsUpTo(2500)));
+    expect(table.requests.map((request) => request.after)).toEqual([undefined, 1000, 2000]);
   });
 
-  it("does not stop early when the server cap is smaller than the page size", async () => {
-    const table = fakeTable(range(1200), { maxRows: 500 });
-    await expect(selectAll(table.fetchPage)).resolves.toEqual(range(1200));
+  it("stops after an empty page when the table is an exact multiple of the page size", async () => {
+    const table = fakeTable(rowsUpTo(2000));
+    await expect(selectAll(table.fetchPage, keyOf)).resolves.toHaveLength(2000);
+    expect(table.requests.map((request) => request.after)).toEqual([undefined, 1000, 2000]);
   });
 
-  it("handles an exact multiple of the page size", async () => {
-    const table = fakeTable(range(2000));
-    await expect(selectAll(table.fetchPage)).resolves.toHaveLength(2000);
-    expect(table.requests).toHaveLength(2);
+  it("returns each existing row exactly once when rows are inserted before the cursor mid-read", async () => {
+    // Offset paging would re-read row 1000 here, because the insert shifts
+    // every later row down by one position.
+    const rows = rowsUpTo(1500).map((row) => ({ id: row.id * 10 }));
+    const table = fakeTable(rows);
+    const result = await selectAll(async (after, limit) => {
+      const page = await table.fetchPage(after, limit);
+      if (after === undefined) rows.push({ id: 5 });
+      return page;
+    }, keyOf);
+    const seen = ids(result);
+    expect(new Set(seen).size).toBe(seen.length);
+    expect(seen.filter((id) => id % 10 === 0)).toHaveLength(1500);
   });
 
-  it("falls back to stopping at a short page when no count is requested", async () => {
-    const table = fakeTable(range(1500), { withCount: false });
-    await expect(selectAll(table.fetchPage)).resolves.toEqual(range(1500));
-    expect(table.requests).toEqual([[0, 999], [1000, 1999]]);
+  it("does not skip rows when an already-read row is deleted mid-read", async () => {
+    // Offset paging would skip a row here, because the delete shifts every
+    // later row up by one position.
+    const rows = rowsUpTo(1500);
+    const table = fakeTable(rows);
+    const result = await selectAll(async (after, limit) => {
+      const page = await table.fetchPage(after, limit);
+      if (after === undefined) rows.splice(0, 1);
+      return page;
+    }, keyOf);
+    expect(ids(result)).toEqual(ids(rowsUpTo(1500)));
   });
 
-  it("stops on an empty page even if the count promised more", async () => {
-    let calls = 0;
-    const rows = await selectAll(async () => {
-      calls += 1;
-      return { data: calls === 1 ? [1, 2] : [], error: null, count: 10 };
-    });
-    expect(rows).toEqual([1, 2]);
-    expect(calls).toBe(2);
+  it("works with a smaller page size as long as it fits under the server cap", async () => {
+    const table = fakeTable(rowsUpTo(1200), { maxRows: 500 });
+    await expect(selectAll(table.fetchPage, keyOf, 500)).resolves.toHaveLength(1200);
   });
 
   it("throws the PostgREST error message", async () => {
     await expect(
-      selectAll(async () => ({
-        data: null,
-        error: new PostgrestError({ message: "boom", details: "", hint: "", code: "XX000" }),
-        count: null
-      }))
+      selectAll(
+        async () => ({ data: null, error: new PostgrestError({ message: "boom", details: "", hint: "", code: "XX000" }) }),
+        keyOf
+      )
     ).rejects.toThrow("boom");
   });
 });
