@@ -10,10 +10,6 @@ function average(values: Array<number | null>) {
   return scores.length ? round(scores.reduce((sum, value) => sum + value, 0) / scores.length) : null;
 }
 
-export async function getCheckInData() {
-  return { ready: true };
-}
-
 export async function getRateData() {
   const supabase = createAdminSupabaseClient();
   const [{ data: pnms, error: pnmError }, { data: brothers, error: brotherError }, { data: ratings, error: ratingError }] =

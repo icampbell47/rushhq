@@ -1,7 +1,6 @@
 "use client";
 
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export const AlertDialog = AlertDialogPrimitive.Root;
@@ -31,6 +30,3 @@ export function AlertDialogFooter(props: React.HTMLAttributes<HTMLDivElement>) {
 }
 
 export const AlertDialogCancel = AlertDialogPrimitive.Cancel;
-export function AlertDialogAction(props: React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Action>) {
-  return <AlertDialogPrimitive.Action asChild {...props}><Button variant="destructive">Confirm</Button></AlertDialogPrimitive.Action>;
-}
