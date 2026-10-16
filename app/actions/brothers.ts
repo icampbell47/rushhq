@@ -52,8 +52,10 @@ export async function upsertBrother(input: unknown, previousRollbook?: number): 
           p_new_rollbook_number: brother.rollbook_number,
           p_first_name: brother.first_name,
           p_last_name: brother.last_name,
-          p_email: brother.email ?? undefined,
-          p_phone_number: brother.phone_number ?? undefined
+          // Same semantics as the update branch: omitted keeps the stored
+          // value, an explicit blank clears it ('' tells the RPC to clear).
+          p_email: toRpcContact(brother.email),
+          p_phone_number: toRpcContact(brother.phone_number)
         })
         .abortSignal(mutationSignal());
     }
@@ -87,6 +89,10 @@ export async function deleteBrother(rollbookNumber: number): Promise<ActionResul
   } catch (error) {
     return toActionError(error, "Unable to delete brother");
   }
+}
+
+function toRpcContact(value: string | null | undefined) {
+  return value === undefined ? undefined : (value ?? "");
 }
 
 function describeBrotherError(error: PostgrestError, rollbookNumber: number) {

@@ -2,7 +2,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 
-SELECT plan(17);
+SELECT plan(20);
 
 -- Fixture: two brothers, one with ratings, independent of the seed.
 INSERT INTO public.brothers (rollbook_number, first_name, last_name, email, phone_number)
@@ -49,6 +49,24 @@ SELECT is(
   (SELECT email FROM public.rename_brother(901, 911, 'Renamed', 'Source', p_email => 'new@example.com')),
   'new@example.com',
   'contact details that are passed replace the old ones'
+);
+
+SELECT results_eq(
+  $$ SELECT email, phone_number FROM public.rename_brother(911, 912, 'Renamed', 'Source', p_email => '', p_phone_number => '') $$,
+  $$ VALUES (NULL::text, NULL::text) $$,
+  'an explicit blank clears contact details, matching a same-number edit'
+);
+
+SELECT results_eq(
+  $$ SELECT email, phone_number FROM public.rename_brother(912, 911, 'Renamed', 'Source', p_phone_number => '404-555-0181') $$,
+  $$ VALUES (NULL::text, '404-555-0181'::text) $$,
+  'an omitted field keeps its (now empty) value while a passed one is set'
+);
+
+SELECT is(
+  (SELECT count(*)::int FROM public.ratings WHERE brother_rollbook_number = 911),
+  3,
+  'ratings follow the brother through repeated renames'
 );
 
 -- Failures leave everything as it was ---------------------------------------
