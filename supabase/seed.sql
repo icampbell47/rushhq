@@ -88,8 +88,11 @@ JOIN seed_rush_days AS d
   ON d.day_index = p.first_day
   OR (p.n % 4 = 0 AND d.day_index > p.first_day);
 
--- Two to six ratings per PNM, spread across the roster. Scores sit around the
--- PNM's impression with a little deterministic jitter.
+-- Two to six ratings per PNM, spread across the roster. Each score combines
+-- the PNM's overall impression, a per-PNM strength or weakness in that
+-- category, how harsh or generous the rating brother is, and per-rating
+-- noise, so averages spread out instead of clustering. All of it is
+-- arithmetic on row numbers, so the data is identical on every reset.
 INSERT INTO public.ratings (
   pnm_id, brother_rollbook_number, submitted_by_rollbook, submitted_at,
   humor_score, sociability_score, genuineness_score, passion_score,
@@ -100,14 +103,15 @@ SELECT
   r.rollbook,
   r.rollbook::text,
   ((d.rush_date + time '19:15' + (p.n + k * 7) * interval '3 minutes') AT TIME ZONE 'America/New_York'),
-  greatest(1, least(5, p.impression + ((p.n + k) % 3) - 1)),
-  greatest(1, least(5, p.impression + ((p.n + 2 * k) % 3) - 1)),
-  greatest(1, least(5, p.impression + ((p.n * 2 + k) % 3) - 1)),
-  greatest(1, least(5, p.impression + ((p.n + k * 3 + 1) % 3) - 1)),
+  sc.humor,
+  sc.sociability,
+  sc.genuineness,
+  sc.passion,
   CASE
-    WHEN p.impression >= 4 THEN (p.n + k) % 5 <> 0
-    WHEN p.impression <= 2 THEN CASE WHEN (p.n + k) % 4 = 0 THEN NULL ELSE false END
-    ELSE CASE (p.n + k) % 3 WHEN 0 THEN true WHEN 1 THEN false ELSE NULL END
+    WHEN (sc.humor + sc.sociability + sc.genuineness + sc.passion) >= 16 THEN (p.n + k) % 6 <> 0
+    WHEN (sc.humor + sc.sociability + sc.genuineness + sc.passion) <= 9 THEN CASE WHEN (p.n + k) % 5 = 0 THEN NULL ELSE false END
+    -- Middling ratings split three ways, which is where real debate happens.
+    ELSE CASE (p.n * 3 + k) % 3 WHEN 0 THEN true WHEN 1 THEN false ELSE NULL END
   END,
   CASE (p.n + k) % 4
     WHEN 0 THEN (ARRAY['Great conversation about co-op plans.','Quiet at first, opened up later.','Already knows a few brothers from class.','Asked thoughtful questions about service events.','Would be a strong fit for intramurals.'])[1 + (p.n + k) % 5]
@@ -120,7 +124,16 @@ SELECT
 FROM seed_pnms AS p
 JOIN seed_rush_days AS d ON d.day_index = p.first_day
 CROSS JOIN LATERAL generate_series(0, 1 + p.n % 5) AS k
-CROSS JOIN LATERAL (SELECT 101 + (p.n * 7 + k * 4) % 15 AS rollbook) AS r;
+CROSS JOIN LATERAL (SELECT 101 + (p.n * 7 + k * 4) % 15 AS rollbook) AS r
+CROSS JOIN LATERAL (
+  SELECT
+    greatest(1, least(5, p.impression + ((p.n * 2) % 3 - 1) + bias.rater + (p.n * 31 + k * 17 + 1) % 3 - 1)) AS humor,
+    greatest(1, least(5, p.impression + ((p.n * 5 + 1) % 3 - 1) + bias.rater + (p.n * 31 + k * 17 + 2) % 3 - 1)) AS sociability,
+    greatest(1, least(5, p.impression + ((p.n * 7 + 2) % 3 - 1) + bias.rater + (p.n * 13 + k * 11) % 3 - 1)) AS genuineness,
+    greatest(1, least(5, p.impression + ((p.n * 11 + 1) % 3 - 1) + bias.rater + (p.n * 13 + k * 10 + 2) % 3 - 1)) AS passion
+  -- Roughly a third of brothers score a point low, a third a point high.
+  FROM (SELECT (r.rollbook * 7) % 3 - 1 AS rater) AS bias
+) AS sc;
 
 -- A brother who has since been removed from the roster: the foreign key is
 -- null but submitted_by_rollbook keeps the historical attribution, and the
