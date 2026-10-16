@@ -1,3 +1,8 @@
+-- Initial schema. Originally committed as 001_initial.sql; renamed so the
+-- Supabase CLI orders it before the timestamped migrations that follow it.
+-- (A database that recorded this migration under version "001" would need
+-- `supabase migration repair` before pushing new migrations.)
+
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TYPE public.pnm_status AS ENUM (

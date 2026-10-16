@@ -1,3 +1,5 @@
+import "server-only";
+
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { isPnmOnRushDate } from "@/lib/rush-day";
 import type { Brother, Pnm, PnmCheckIn, Rating } from "@/lib/types/database";

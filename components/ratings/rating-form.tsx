@@ -48,7 +48,7 @@ export function RatingForm({ pnms, brothers, ratings }: { pnms: Pnm[]; brothers:
   const selectedBrother = form.watch("brother_rollbook_number");
   const duplicate = submittedRatings.some((rating) =>
     rating.pnm_id === selectedPnm &&
-    (rating.submitted_by_rollbook === selectedBrother || rating.brother_rollbook_number === selectedBrother)
+    (rating.submitted_by_rollbook === String(selectedBrother) || rating.brother_rollbook_number === selectedBrother)
   );
 
   const filteredPnms = useMemo(() => {

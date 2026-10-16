@@ -21,7 +21,8 @@ export async function createRating(input: unknown): Promise<ActionResult<Rating>
       .from("ratings")
       .insert({
         ...parsed.data,
-        submitted_by_rollbook: parsed.data.brother_rollbook_number
+        // Plain-text copy of the rater that survives the brother being deleted.
+        submitted_by_rollbook: String(parsed.data.brother_rollbook_number)
       })
       .select("*")
       .abortSignal(AbortSignal.timeout(MUTATION_TIMEOUT_MS))

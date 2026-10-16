@@ -26,14 +26,15 @@ export async function createPnm(input: unknown): Promise<ActionResult<Pnm>> {
       .rpc("check_in_pnm", {
         p_first_name: parsed.data.first_name,
         p_last_name: parsed.data.last_name,
-        p_hometown: parsed.data.hometown,
         p_year_of_school: parsed.data.year_of_school,
         p_major: parsed.data.major,
-        p_instagram_handle: parsed.data.instagram_handle,
-        p_phone_number: parsed.data.phone_number,
         p_first_name_key: identityKeys.first_name_key,
         p_last_name_key: identityKeys.last_name_key,
-        p_rush_date: getDefaultRushDate()
+        p_rush_date: getDefaultRushDate(),
+        // Optional arguments default to NULL in SQL; omit them rather than send null.
+        p_hometown: parsed.data.hometown ?? undefined,
+        p_instagram_handle: parsed.data.instagram_handle,
+        p_phone_number: parsed.data.phone_number ?? undefined
       })
       .abortSignal(AbortSignal.timeout(MUTATION_TIMEOUT_MS));
     if (error) return { ok: false, error: error.message };

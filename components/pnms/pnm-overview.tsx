@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { YEAR_OPTIONS } from "@/lib/constants";
+import { isYearOfSchool, YEAR_OPTIONS } from "@/lib/constants";
 import type { PnmWithRatings } from "@/lib/types/app";
 import { averageScore, formatDate, fullName } from "@/lib/utils";
 import type { PnmUpdateValues } from "@/lib/validations/pnms";
@@ -24,7 +24,7 @@ export function PnmOverview({ pnm }: { pnm: PnmWithRatings }) {
     first_name: pnm.first_name,
     last_name: pnm.last_name,
     hometown: pnm.hometown,
-    year_of_school: pnm.year_of_school ?? "Freshman",
+    year_of_school: isYearOfSchool(pnm.year_of_school) ? pnm.year_of_school : "Freshman",
     major: pnm.major ?? "",
     instagram_handle: pnm.instagram_handle ?? "",
     email: pnm.email,
