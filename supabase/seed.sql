@@ -28,7 +28,7 @@ CREATE TEMP TABLE seed_pnms AS
 SELECT
   n,
   md5('rushhq-seed-pnm-' || n)::uuid AS id,
-  (ARRAY['Aiden','Brooks','Carter','Dominic','Elijah','Finn','Graham','Hudson','Ian','Jasper',
+  (ARRAY['Aiden','Brooks','Carter','Dominic','Elijah','Finn','Graham','Hudson','Idris','Jasper',
          'Kai','Landon','Mason','Noah','Oliver','Parker','Quinn','Reid','Sawyer','Tristan',
          'Umar','Victor','Wesley','Xavier','Yusuf','Zane','Andrés','Beckett','Colin','Dante',
          'Emmett','Felix','Grant','Hayes','Ivan','Jonah','Kieran','Lucas','Mateo','Nico'])[n] AS first_name,
