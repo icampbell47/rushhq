@@ -8,7 +8,9 @@ import { defineConfig } from "vitest/config";
 export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
-      "@": fileURLToPath(new URL("./", import.meta.url))
+      "@": fileURLToPath(new URL("./", import.meta.url)),
+      // lib/data.ts is exercised directly; see tests/stubs/server-only.ts.
+      "server-only": fileURLToPath(new URL("./tests/stubs/server-only.ts", import.meta.url))
     }
   },
   test: {

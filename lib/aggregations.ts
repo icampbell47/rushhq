@@ -61,14 +61,18 @@ export function getBrotherStats<T extends Pick<Brother, "rollbook_number">>(
   });
 }
 
-export function groupCheckInsByPnmId<T extends Pick<PnmCheckIn, "pnm_id">>(checkIns: T[]) {
+export function groupByPnmId<T extends { pnm_id: string }>(rows: T[]) {
   const byPnmId = new Map<string, T[]>();
-  for (const checkIn of checkIns) {
-    const existing = byPnmId.get(checkIn.pnm_id);
-    if (existing) existing.push(checkIn);
-    else byPnmId.set(checkIn.pnm_id, [checkIn]);
+  for (const row of rows) {
+    const existing = byPnmId.get(row.pnm_id);
+    if (existing) existing.push(row);
+    else byPnmId.set(row.pnm_id, [row]);
   }
   return byPnmId;
+}
+
+export function groupCheckInsByPnmId<T extends Pick<PnmCheckIn, "pnm_id">>(checkIns: T[]) {
+  return groupByPnmId(checkIns);
 }
 
 /**

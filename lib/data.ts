@@ -1,6 +1,7 @@
 import "server-only";
 
-import { getBrotherStats, getNextPnmIdAlphabetical, groupCheckInsByPnmId, summarizeRatings } from "@/lib/aggregations";
+import { getBrotherStats, getNextPnmIdAlphabetical, groupByPnmId, groupCheckInsByPnmId, summarizeRatings } from "@/lib/aggregations";
+import { selectAll } from "@/lib/supabase/select-all";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import type {
   BrotherTableRow,
@@ -11,6 +12,11 @@ import type {
   RatingAuthorship
 } from "@/lib/types/app";
 
+// Every list read is paginated with selectAll and an explicit order: a plain
+// select stops at PostgREST's max_rows (1000) without reporting an error.
+// The cap also applies to embedded resources, so ratings are fetched as
+// their own paginated query instead of through a pnms -> ratings embed.
+
 const RATING_SCORE_COLUMNS = "humor_score, sociability_score, genuineness_score, passion_score, bid_vote";
 
 export async function getRateData(): Promise<{
@@ -20,78 +26,82 @@ export async function getRateData(): Promise<{
 }> {
   const supabase = createAdminSupabaseClient();
   const [pnms, brothers, ratings] = await Promise.all([
-    supabase.from("pnms").select("id, first_name, last_name, hometown").order("first_name"),
-    supabase.from("brothers").select("rollbook_number, first_name, last_name").order("first_name"),
-    supabase.from("ratings").select("pnm_id, brother_rollbook_number, submitted_by_rollbook")
+    selectAll((from, to) =>
+      supabase.from("pnms").select("id, first_name, last_name, hometown", { count: "exact" }).order("first_name").order("id").range(from, to)
+    ),
+    selectAll((from, to) =>
+      supabase.from("brothers").select("rollbook_number, first_name, last_name", { count: "exact" }).order("first_name").order("rollbook_number").range(from, to)
+    ),
+    selectAll((from, to) =>
+      supabase.from("ratings").select("pnm_id, brother_rollbook_number, submitted_by_rollbook", { count: "exact" }).order("id").range(from, to)
+    )
   ]);
 
-  if (pnms.error) throw new Error(pnms.error.message);
-  if (brothers.error) throw new Error(brothers.error.message);
-  if (ratings.error) throw new Error(ratings.error.message);
-
-  return { pnms: pnms.data, brothers: brothers.data, ratings: ratings.data };
+  return { pnms, brothers, ratings };
 }
 
 export async function getPnmRows(): Promise<PnmTableRow[]> {
   const supabase = createAdminSupabaseClient();
-  const [pnms, checkIns] = await Promise.all([
-    supabase.from("pnms").select(`*, ratings(${RATING_SCORE_COLUMNS})`),
-    supabase.from("pnm_checkins").select("pnm_id, rush_date")
+  const [pnms, ratings, checkIns] = await Promise.all([
+    selectAll((from, to) => supabase.from("pnms").select("*", { count: "exact" }).order("id").range(from, to)),
+    selectAll((from, to) =>
+      supabase.from("ratings").select(`pnm_id, ${RATING_SCORE_COLUMNS}`, { count: "exact" }).order("id").range(from, to)
+    ),
+    selectAll((from, to) => supabase.from("pnm_checkins").select("pnm_id, rush_date", { count: "exact" }).order("id").range(from, to))
   ]);
-  if (pnms.error) throw new Error(pnms.error.message);
-  if (checkIns.error) throw new Error(checkIns.error.message);
 
-  const checkInsByPnmId = groupCheckInsByPnmId(checkIns.data);
+  const ratingsByPnmId = groupByPnmId(ratings);
+  const checkInsByPnmId = groupCheckInsByPnmId(checkIns);
 
-  return pnms.data.map(({ ratings, ...pnm }) => ({
+  return pnms.map((pnm) => ({
     ...pnm,
-    ...summarizeRatings(ratings),
+    ...summarizeRatings(ratingsByPnmId.get(pnm.id) ?? []),
     pnm_checkins: checkInsByPnmId.get(pnm.id) ?? []
   }));
 }
 
 export async function getPnmById(id: string): Promise<PnmWithRatings | null> {
   const supabase = createAdminSupabaseClient();
-  const [pnm, checkIns] = await Promise.all([
-    supabase
-      .from("pnms")
-      .select("*, ratings(*, brothers(rollbook_number, first_name, last_name))")
-      .eq("id", id)
-      .maybeSingle(),
-    supabase.from("pnm_checkins").select("*").eq("pnm_id", id).order("rush_date")
+  const [pnm, ratings, checkIns] = await Promise.all([
+    supabase.from("pnms").select("*").eq("id", id).maybeSingle(),
+    selectAll((from, to) =>
+      supabase
+        .from("ratings")
+        .select("*, brothers(rollbook_number, first_name, last_name)", { count: "exact" })
+        .eq("pnm_id", id)
+        .order("submitted_at", { nullsFirst: true })
+        .order("id")
+        .range(from, to)
+    ),
+    selectAll((from, to) =>
+      supabase.from("pnm_checkins").select("*", { count: "exact" }).eq("pnm_id", id).order("rush_date").range(from, to)
+    )
   ]);
 
   if (pnm.error) throw new Error(pnm.error.message);
-  if (checkIns.error) throw new Error(checkIns.error.message);
   if (!pnm.data) return null;
 
-  return {
-    ...pnm.data,
-    pnm_checkins: checkIns.data,
-    ratings: [...pnm.data.ratings].sort((a, b) => String(a.submitted_at ?? "").localeCompare(String(b.submitted_at ?? "")))
-  };
+  return { ...pnm.data, ratings, pnm_checkins: checkIns };
 }
 
 export async function getNextPnmId(id: string, rushDate?: string): Promise<string | null> {
   const supabase = createAdminSupabaseClient();
   const [pnms, checkIns] = await Promise.all([
-    supabase.from("pnms").select("id, first_name, last_name, created_at"),
-    supabase.from("pnm_checkins").select("pnm_id, rush_date")
+    selectAll((from, to) =>
+      supabase.from("pnms").select("id, first_name, last_name, created_at", { count: "exact" }).order("id").range(from, to)
+    ),
+    selectAll((from, to) => supabase.from("pnm_checkins").select("pnm_id, rush_date", { count: "exact" }).order("id").range(from, to))
   ]);
-  if (pnms.error) throw new Error(pnms.error.message);
-  if (checkIns.error) throw new Error(checkIns.error.message);
 
-  return getNextPnmIdAlphabetical(pnms.data, id, rushDate, groupCheckInsByPnmId(checkIns.data));
+  return getNextPnmIdAlphabetical(pnms, id, rushDate, groupCheckInsByPnmId(checkIns));
 }
 
 export async function getBrotherRows(): Promise<BrotherTableRow[]> {
   const supabase = createAdminSupabaseClient();
   const [brothers, ratings] = await Promise.all([
-    supabase.from("brothers").select("*").order("rollbook_number"),
-    supabase.from("ratings").select("brother_rollbook_number, bid_vote")
+    selectAll((from, to) => supabase.from("brothers").select("*", { count: "exact" }).order("rollbook_number").range(from, to)),
+    selectAll((from, to) => supabase.from("ratings").select("brother_rollbook_number, bid_vote", { count: "exact" }).order("id").range(from, to))
   ]);
-  if (brothers.error) throw new Error(brothers.error.message);
-  if (ratings.error) throw new Error(ratings.error.message);
 
-  return getBrotherStats(brothers.data, ratings.data);
+  return getBrotherStats(brothers, ratings);
 }
