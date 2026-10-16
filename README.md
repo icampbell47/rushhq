@@ -107,6 +107,8 @@ erDiagram
 
 **One normalization rule, implemented twice and tested against itself.** Identity keys lowercase, strip accents (NFKD), and drop everything but `[a-z0-9]`, so "Jean-Luc O'Neil" and "jean luc oneil" match. The app computes keys in TypeScript (`lib/pnm-identity.ts`), and SQL needs the same rule for backfills. The two had drifted on accented names; a migration aligned them, and the Vitest and pgTAP suites now assert the same cases.
 
+**Atomic rollbook renumbering.** Ratings reference brothers by rollbook number, and the foreign key does not cascade updates. Changing a brother's number used to take three separate requests (insert the new row, repoint ratings, delete the old row), so a timeout in the middle left a duplicate brother or ratings split across two numbers. The `rename_brother` function does all three in one transaction, locks the source row, and fails cleanly if the target number is taken; `rename_brother.test.sql` checks that a failed rename changes nothing.
+
 **Rush days end at 6am Eastern.** Post-rush meetings run past midnight but belong to the previous night. `lib/rush-day.ts` assigns dates in `America/New_York` with a 6am cutoff, matching the column default in SQL. The tests cover the cutoff boundary, both 2026 DST transitions, and month/year rollback, and run with the process pinned to `Asia/Tokyo` so they cannot pass by accident on an East Coast machine.
 
 **Signed shared-password sessions instead of user accounts.** Access is by tier, not by person: brothers rate on shared tablets at events, and there is one admin group. Each tier has a shared password, compared in constant time, and a successful login sets an HS256 JWT (via `jose`, so the same code runs in Edge middleware) carrying the tier, issuer, and expiry: 30 days for brothers, 12 hours for admins. Middleware verifies it for routing, and every page and server action re-checks it with `await requireAdmin()` / `await requireBrother()`, since server actions can be called directly. A missing `await` on those checks would be a silent bypass, so ESLint's `no-floating-promises` rule is an error.
@@ -132,7 +134,7 @@ cp .env.example .env.local  # then fill it in, see below
 npm run dev                 # http://localhost:3000
 ```
 
-In `.env.local`, set `SUPABASE_URL` to the API URL that `npm run db:start` prints (`http://127.0.0.1:54321`) and `SUPABASE_SERVICE_ROLE_KEY` to the printed service role key. Pick any `BROTHER_PASSWORD` and `ADMIN_PASSWORD`, and generate `SESSION_SECRET` with `openssl rand -base64 48`.
+In `.env.local`, set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to the `API_URL` and `SERVICE_ROLE_KEY` values from `supabase status -o env` (the API URL is `http://127.0.0.1:54321`). Pick any `BROTHER_PASSWORD` and `ADMIN_PASSWORD`, and generate `SESSION_SECRET` with `openssl rand -base64 48`.
 
 Then open `/` for the check-in kiosk, `/rate` for the brother form, and `/pnms` or `/brothers` for the admin dashboards. The seed contains 15 brothers, 40 PNMs across the three most recent rush days, and 165 ratings, all fictional.
 
@@ -147,7 +149,7 @@ Then open `/` for the check-in kiosk, `/rate` for the brother form, and `/pnms` 
 | Command | Covers | Needs |
 | --- | --- | --- |
 | `npm test` | Vitest unit tests: identity normalization, rush-day boundaries, Zod schemas, session tokens (tampering, wrong secret, expiry, `alg: none`), redirect safety, dashboard aggregations | nothing |
-| `npm run test:db` | pgTAP: `check_in_pnm` behavior and privileges, RLS for `anon` / `authenticated` / `service_role`, schema invariants | local Supabase |
+| `npm run test:db` | pgTAP: `check_in_pnm` and `rename_brother` behavior and privileges, RLS for `anon` / `authenticated` / `service_role`, schema invariants | local Supabase |
 | `SUPABASE_INTEGRATION=1 npm run test:integration` | Concurrency stress test against the local REST API | local Supabase |
 | `npm run lint` / `npm run typecheck` | ESLint (including `no-floating-promises`) and `tsc --noEmit` | nothing |
 
@@ -186,6 +188,7 @@ The app was first built and deployed for my chapter's rush on a hosted Supabase 
 - **Database access.** The original grants left the `SECURITY DEFINER` check-in function executable by the public `anon` role through Supabase's default privileges. EXECUTE is now limited to `service_role`, and a pgTAP test pins it.
 - **Replayable migrations.** A migration pulled from production could not be applied to a fresh database. It now replays from scratch, with a local seed and a test suite on top.
 - **Data exposure.** The rating page no longer ships PNM contact details and other brothers' comments to every brother's browser.
+- **Brother management.** Renumbering a brother is a single transaction instead of three requests, and adding a brother with a number that is already taken now fails instead of overwriting the existing brother.
 - **Bugs found along the way.** Editing a PNM with no email or phone failed validation, one of the duplicate-rating warning's two comparisons could never match because of a string/number mismatch, and accented names could produce duplicate PNMs. Each is fixed in its own commit, with a unit or pgTAP test where the bug was behavioral.
 - **Neutral branding.** Chapter-specific names, a hotlinked crest, and internal slang (a status called "Dumpster Toured" is now "Released") were removed. Set `NEXT_PUBLIC_CHAPTER_NAME` to brand a deployment.
 

@@ -120,6 +120,13 @@ describe("brotherSchema", () => {
     expect(parsed).toEqual({ rollbook_number: 7, first_name: "Sam", last_name: "Lee", email: null, phone_number: null });
   });
 
+  it("leaves omitted contact fields undefined so edits do not wipe them", () => {
+    const parsed = brotherSchema.parse({ rollbook_number: 7, first_name: "Sam", last_name: "Lee" });
+    expect(parsed.email).toBeUndefined();
+    expect(parsed.phone_number).toBeUndefined();
+    expect("email" in JSON.parse(JSON.stringify(parsed))).toBe(false);
+  });
+
   it("rejects non-positive or fractional rollbook numbers", () => {
     expect(brotherSchema.safeParse({ rollbook_number: "0", first_name: "Sam", last_name: "Lee" }).success).toBe(false);
     expect(brotherSchema.safeParse({ rollbook_number: "1.5", first_name: "Sam", last_name: "Lee" }).success).toBe(false);

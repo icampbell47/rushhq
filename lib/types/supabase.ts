@@ -236,6 +236,29 @@ export type Database = {
         }
       }
       normalize_pnm_identity_part: { Args: { input: string }; Returns: string }
+      rename_brother: {
+        Args: {
+          p_email?: string
+          p_first_name: string
+          p_last_name: string
+          p_new_rollbook_number: number
+          p_old_rollbook_number: number
+          p_phone_number?: string
+        }
+        Returns: {
+          email: string | null
+          first_name: string
+          last_name: string
+          phone_number: string | null
+          rollbook_number: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "brothers"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       pnm_status:
