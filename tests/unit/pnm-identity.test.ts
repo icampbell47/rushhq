@@ -19,6 +19,11 @@ describe("normalizePnmIdentityPart", () => {
     expect(normalizePnmIdentityPart("Ångström")).toBe("angstrom");
   });
 
+  it("strips already-decomposed combining marks", () => {
+    // "e" + U+0301 COMBINING ACUTE ACCENT, as some keyboards produce it.
+    expect(normalizePnmIdentityPart("Jose\u0301 Zoe\u0308")).toBe("josezoe");
+  });
+
   it("keeps digits", () => {
     expect(normalizePnmIdentityPart("Henry 3rd")).toBe("henry3rd");
   });

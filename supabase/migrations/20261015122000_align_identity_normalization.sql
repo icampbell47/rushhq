@@ -6,13 +6,17 @@
 -- sends keys computed in TypeScript, but rows backfilled by SQL in
 -- 20260820133000 got the SQL keys, so a returning PNM with an accented name
 -- would not match their own earlier record and would be duplicated.
+--
+-- U+0300..U+036F is the Combining Diacritical Marks block, the same range
+-- lib/pnm-identity.ts strips. It is written with E'' escapes so the source
+-- stays ASCII instead of containing invisible combining characters.
 CREATE OR REPLACE FUNCTION public.normalize_pnm_identity_part(input TEXT)
 RETURNS TEXT
 LANGUAGE SQL
 IMMUTABLE
 AS $$
   SELECT regexp_replace(
-    lower(regexp_replace(normalize(coalesce(input, ''), NFKD), '[̀-ͯ]', '', 'g')),
+    lower(regexp_replace(normalize(coalesce(input, ''), NFKD), E'[\u0300-\u036f]', '', 'g')),
     '[^a-z0-9]',
     '',
     'g'

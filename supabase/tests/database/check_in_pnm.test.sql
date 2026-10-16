@@ -4,7 +4,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 
-SELECT plan(24);
+SELECT plan(25);
 
 -- Fixture dates far from the seed's rush days.
 \set day1 '''2030-01-10'''
@@ -149,6 +149,12 @@ SELECT results_eq(
      FROM unnest(ARRAY['José', 'Zoë', 'Ångström', 'Núñez']) WITH ORDINALITY AS t(input, n) ORDER BY n $$,
   $$ VALUES ('jose'), ('zoe'), ('angstrom'), ('nunez') $$,
   'normalization keeps the base letter of accented characters'
+);
+
+SELECT is(
+  public.normalize_pnm_identity_part(E'Jose\u0301 Zoe\u0308'),
+  'josezoe',
+  'normalization strips already-decomposed combining marks (U+0300..U+036F)'
 );
 
 SELECT results_eq(
