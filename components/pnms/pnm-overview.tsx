@@ -103,10 +103,10 @@ export function PnmOverview({ pnm }: { pnm: PnmWithRatings }) {
           <CardHeader><CardTitle>PNM Scores ({pnm.ratings.length} Ratings)</CardTitle></CardHeader>
           <CardContent className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
+              <BarChart data={chartData} margin={{ top: 24, right: 8, bottom: 0, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="category" />
-                <YAxis domain={[0, 5]} />
+                <YAxis domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} allowDecimals={false} />
                 <Tooltip />
                 <Bar dataKey="average" barSize={30} radius={[4, 4, 0, 0]} label={{ position: "top" }}>
                   {chartData.map((entry, index) => <Cell key={entry.category} fill={scoreColors[index]} />)}
