@@ -73,7 +73,7 @@ describe.skipIf(!enabled)("data layer on tables larger than one PostgREST page",
     expect(ratings.filter((rating) => rating.brother_rollbook_number === BROTHER)).toHaveLength(EXTRA_RATINGS);
   });
 
-  it("getPnmRows includes every embedded rating for a PNM", async () => {
+  it("getPnmRows counts every rating per PNM", async () => {
     const rows = await getPnmRows();
     const { count: pnmCount } = await supabase.from("pnms").select("id", { count: "exact", head: true });
     expect(rows).toHaveLength(pnmCount ?? -1);
